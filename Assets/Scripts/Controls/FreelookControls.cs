@@ -1,26 +1,76 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;   // ← new Input System
-using Unity.Cinemachine;        // ← Cinemachine 3.x namespace
+using UnityEngine.InputSystem;      // new Input System
+using Unity.Cinemachine;            // CM3
 
-// Put this on the same GameObject as your CinemachineCamera.
-// Make sure that object also has a CinemachineInputAxisController component.
 [RequireComponent(typeof(CinemachineInputAxisController))]
 public class HoldRMBToLook : MonoBehaviour
 {
     CinemachineInputAxisController inputCtrl;
 
+    // Cache per-axis original gains so we can restore them
+    class AxisCache {
+        public CinemachineInputAxisController.Reader reader;
+        public float gain;
+#if ENABLE_LEGACY_INPUT_MANAGER
+        public float legacyGain;
+#endif
+        public bool isRadial; // we won't gate this one
+    }
+    readonly List<AxisCache> axes = new();
+
     void Awake()
     {
         inputCtrl = GetComponent<CinemachineInputAxisController>();
+        BuildCache();
+    }
+
+    void OnEnable() => BuildCache();
+
+    void BuildCache()
+    {
+        axes.Clear();
+        if (inputCtrl == null) return;
+
+        // Controllers are auto-discovered by CM3
+        foreach (var c in inputCtrl.Controllers)
+        {
+            var r = c.Input as CinemachineInputAxisController.Reader;
+            if (r == null) continue;
+
+            // Heuristic: skip any axis that is labeled "Radial"
+            bool isRadial = !string.IsNullOrEmpty(c.Name) &&
+                            c.Name.IndexOf("radial", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            axes.Add(new AxisCache {
+                reader = r,
+                gain = r.Gain,
+#if ENABLE_LEGACY_INPUT_MANAGER
+                legacyGain = r.LegacyGain,
+#endif
+                isRadial = isRadial
+            });
+        }
     }
 
     void Update()
     {
-        // Mobile or build-target with no mouse? bail out.
         if (Mouse.current == null) return;
 
-        // Enable axis reading only while LMB is held
-        inputCtrl.enabled = Mouse.current.leftButton.isPressed;
+        bool held = Mouse.current.leftButton.isPressed;   // change to rightButton if you prefer
+
+        foreach (var a in axes)
+        {
+            if (a.reader == null) continue;
+
+            // Keep Radial axis active for zoom, gate only look axes
+            float g = (held || a.isRadial) ? a.gain : 0f;
+            a.reader.Gain = g;
+#if ENABLE_LEGACY_INPUT_MANAGER
+            a.reader.LegacyGain = (held || a.isRadial) ? a.legacyGain : 0f;
+#endif
+        }
     }
 }
 
