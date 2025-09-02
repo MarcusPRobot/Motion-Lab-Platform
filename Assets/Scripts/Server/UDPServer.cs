@@ -8,6 +8,7 @@ using UnityEngine;
 public class FixedUdpHub : MonoBehaviour
 {
     public Datahandling dataHandler;
+    public UIController UI;
 
     public bool receiveSimulink = false;
     public bool receivePLC = false;
@@ -60,13 +61,6 @@ public class FixedUdpHub : MonoBehaviour
             while (mainQueue.Count > 0) mainQueue.Dequeue()?.Invoke();
     }
 
-    public void changeIP(string ip, int which)
-    {
-        if (which == 0) peerAIP = ip;
-        else if (which == 1) peerBIP = ip;
-        else if (which == 2) localBindIP = ip;
-    }
-
     public void StartServer()
     {
         if (udp != null) return;
@@ -91,11 +85,13 @@ public class FixedUdpHub : MonoBehaviour
             rxThread.Start();
 
             Debug.Log($"[FixedUdpHub] Listening on {boundOn} | A={peerA} | B={peerB}");
+            UI.connectionSpinner.SetActive(false);
         }
         catch (Exception ex)
         {
             Debug.LogError($"[FixedUdpHub] Start failed: {ex.Message}");
             StopServer();
+            UI.connectionSpinner.SetActive(false);
         }
     }
 

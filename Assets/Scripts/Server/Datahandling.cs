@@ -4,6 +4,8 @@ using UnityEngine;
 public class Datahandling : MonoBehaviour
 {
     public StewartIK_DeltaAB smallStewart;
+    
+    
 
     public void inputSorter(string input)
     {
@@ -11,7 +13,7 @@ public class Datahandling : MonoBehaviour
         int nl = input.IndexOf('\n');
         if (nl >= 0) input = input.Substring(0, nl);
 
-        string[] p = input.Split(new[] {','}, System.StringSplitOptions.RemoveEmptyEntries);
+        string[] p = input.Split(new[] { ',' }, System.StringSplitOptions.RemoveEmptyEntries);
         if (p.Length >= 7) stewartData(p);
     }
 
@@ -33,7 +35,7 @@ public class Datahandling : MonoBehaviour
         // prefer integer compare for identifiers
         if (int.TryParse(idTok, NumberStyles.Integer, inv, out int id) && id == 1)
         {
-            smallStewart.realTimeInput(surge, sway, heave, roll, pitch, yaw);
+            smallStewart.realTimeInput(surge, sway, heave + - 1.125f, roll, pitch, yaw);
         }
         else
         {
